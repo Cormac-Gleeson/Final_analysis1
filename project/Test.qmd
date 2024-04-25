@@ -1,0 +1,76 @@
+---
+title: "Mapping Prosperity: The Nexus Between Wealth and Life Expectancy"
+date: 2024/04/25
+author: "Cormac Gleeson"
+format: html
+theme: sandstone
+backgroundcolor: Lightgrey
+editor: visual
+subtitle: How GNI influences the Worlds Life Expectancy
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# libraries
+library(tidyverse)
+library(plotly)
+library(countrycode)
+
+#data
+unicef_metadata <- read_csv("unicef_metadata.csv")
+unicef_indicator_1 <- read_csv("unicef_indicator_1.csv")
+unicef_metadata_1_ <- read_csv("unicef_metadata (1).csv")
+
+#transformations
+data_join <- full_join(unicef_metadata, unicef_indicator_1)
+
+```
+
+```{r}
+#| fig-cap: The image above depicts the life expectancy of each Country around the world in the year 1980. At the time, the global average life expectancy was ~61. However, it is the disparities between each region that becomes most striking as you look to at the Map. 
+
+   map_world <- map_data("world")
+   
+  data_join_1980 <- data_join %>% 
+  filter(year==1980)
+ 
+
+  map_data_1980<-full_join(data_join_1980, map_world, by =c("country" = "region"))
+
+  ggplot(map_data_1980) + 
+  aes(x = long, y = lat, group = group, fill = LifeExp) + 
+  geom_polygon() +
+scale_fill_gradient(low = "Orange", high = "red", na.value = "grey") + 
+  labs(title = "Life Expectancy in 1980", subtitle = "Countries in Grey have no data due to a name mismatch", caption = "Source: R Package {Unicef}", x = "Longitude", y = "Latitude", fill = "Life Expectancy") + theme_bw()
+
+```
+
+```{r}
+
+data_join$Continent <- countrycode(data_join$country, origin = "country.name", destination = "continent")
+
+timeseries_plot_2 <-  data_join %>%
+  ggplot() + 
+  aes(year, LifeExp, group = country, color = Continent) +
+  geom_line() + labs(title = "Interactive Map showcasing the growth of Average Life Expectancy per Continent",
+subtitle = "Use the Sidetable to inspect each Continent, and Countries", 
+x = "Life Expectancy",
+y = "Year", 
+color = "Continent") + 
+theme_bw()
+
+ggplotly(timeseries_plot_2)
+
+```
+
+```{r}
+data_join3 <- full_join(unicef_metadata_1_, data_join)
+
+plot_ly(data = data_join3, x = ~year, y = ~`GNI (current US$)`, color = ~Continent, type = 'scatter', mode = 'lines') %>%
+  layout(title = "GNI Per Capita by Continent Over Time",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "GNI Per Capita"),
+         hovermode = "closest") 
+```
